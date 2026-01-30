@@ -1,20 +1,4 @@
-You can absolutely paste a clean, readable version of this summary into a GitHub README **using standard Markdown** — no HTML required. GitHub’s Markdown renderer supports:
-
-- Headings  
-- Lists  
-- Code blocks  
-- Directory trees  
-- Bold/italic text  
-- Horizontal rules  
-
-…which is everything you need to present the unified wizard system clearly.
-
-Below is a **GitHub‑ready README section**, formatted entirely in Markdown, including a clean directory‑tree block that renders perfectly on GitHub.
-
-You can paste this directly into your fork’s `README.md`.
-
 ---
-
 # **Unified Wizard System for EdgeTX — Summary**
 
 This fork introduces a **unified, cross‑radio model‑creation wizard system** for EdgeTX. It replaces the fragmented, duplicated wizard implementations with a single, modern architecture that works consistently across **color**, **BW 212×64**, and **BW 128×64** radios.
@@ -191,3 +175,4 @@ It reduces complexity, improves maintainability, and delivers a consistent, reli
 ---
 
 If you want, I can also generate a **PR‑ready description**, a **migration guide**, or a **developer onboarding guide** for new template authors.
+
