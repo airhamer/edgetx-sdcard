@@ -174,5 +174,6 @@ It reduces complexity, improves maintainability, and delivers a consistent, reli
 
 ---
 
-If you want, I can also generate a **PR‑ready description**, a **migration guide**, or a **developer onboarding guide** for new template authors.
+
+
 
