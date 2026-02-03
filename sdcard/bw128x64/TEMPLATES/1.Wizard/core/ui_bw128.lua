@@ -1,109 +1,287 @@
+---- #########################################################################
+---- #                                                                       #
+---- # Copyright (C) OpenTX                                                  #
+---- #                                                                       #
+---- # License GPLv2: http://www.gnu.org/licenses/gpl-2.0.html               #
+---- #                                                                       #
+---- # This program is free software; you can redistribute it and/or modify  #
+---- # it under the terms of the GNU General Public License version 2 as     #
+---- # published by the Free Software Foundation.                            #
+---- #                                                                       #
+---- # This program is distributed in the hope that it will be useful        #
+---- # but WITHOUT ANY WARRANTY; without even the implied warranty of        #
+---- # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         #
+---- # GNU General Public License for more details.                          #
+---- #                                                                       #
+---- #########################################################################
+
+-- Author: Airhamer / ErnestWorrel (2026)
 -- ui_bw128.lua
--- Simple BW128 UI module - works with both simple calls and core_engine
+-- Place in: <bw128x64>/TEMPLATES/1.Wizard/core/
+-- Universal wizard for all radio types - uses core_engine and ui modules
+-- BW 128x64 UI module (e.g. Radiomaster GX12, pocket, frsky x7 etc
+--
+-- Navigation (matches original EdgeTX bw128 wizard style):
+--   INC / DEC        : move between fields (not editing) / scroll value (editing)
+--   ENTER            : toggle edit mode on selected field (field blinks)
+--   NEXT_PAGE        : advance to next page
+--   PREV_PAGE        : go back one page
+--   EXIT             : exit wizard
+
 local ui = {}
 
-function ui.renderPage(pageOrTitle, textOrLines, state, radio)
-  lcd.clear()
-  
-  -- Handle two calling patterns:
-  -- 1. Old simple: renderPage(title, lines, state)
-  -- 2. New core_engine: renderPage(page, text, state, radio)
-  
-  local title, lines
-  
-  if type(pageOrTitle) == "table" and pageOrTitle.title then
-    -- New core_engine format: pageOrTitle is a page object
-    local page = pageOrTitle
-    title = page.title or "Wizard"
-    
-    -- textOrLines is actually the text string for this page
-    local text = textOrLines or ""
-    
-    -- Build lines from page data
-    lines = {}
-    
-    if page.options then
-      -- Selection page - show options with scrolling
-      local currentVal = page.getValue and page.getValue() or 0
-      local visibleLines = 4  -- Max visible options on BW128
-      local scroll = 0
-      
-      -- Calculate scroll offset to keep selection visible
-      if currentVal >= visibleLines then
-        scroll = currentVal - visibleLines + 1
-      end
-      
-      -- Show text header if not too many options
-      if #page.options <= 5 then
-        lines[1] = text
-      end
-      
-      -- Show visible options
-      for i = scroll + 1, math.min(#page.options, scroll + visibleLines) do
-        local selected = (i - 1 == currentVal)
-        lines[#lines + 1] = (selected and "> " or "  ") .. page.options[i]
-      end
-      
-      -- Show scroll indicator if needed
-      if #page.options > visibleLines then
-        lines[#lines + 1] = string.format("(%d/%d)", currentVal + 1, #page.options)
-      end
-      
+----------------------------------------------------------------------
+-- Internal state
+----------------------------------------------------------------------
+local uiState = {
+    field = 0,       -- Currently highlighted field index (0-based)
+    edit  = false,   -- Is the current field in edit mode?
+    dirty = true     -- Do we need to redraw?
+}
+
+----------------------------------------------------------------------
+-- Blink: toggle INVERS on/off manually every ~500ms
+----------------------------------------------------------------------
+local blinkOn = true
+local lastBlinkTick = 0
+local function updateBlink()
+    local t = getTime()
+    if t - lastBlinkTick >= 50 then   -- ~500ms at 100Hz tick
+        lastBlinkTick = t
+        blinkOn = not blinkOn
+        uiState.dirty = true
+    end
+end
+
+----------------------------------------------------------------------
+-- Called by core_engine when page changes
+----------------------------------------------------------------------
+function ui.resetPage()
+    uiState.field = 0
+    uiState.edit  = false
+    uiState.dirty = true
+end
+
+function ui.init()
+    uiState.field = 0
+    uiState.edit  = false
+    uiState.dirty = true
+end
+
+----------------------------------------------------------------------
+-- Build field list from page definition.
+-- A page with page.options has one field.
+-- A page with page.fields has multiple fields (future multi-field pages).
+-- A summary page has read-only display fields.
+----------------------------------------------------------------------
+local function getFields(page)
+    if page.fields then
+        -- Future: multi-field pages (like plane tail config)
+        return page.fields
+    elseif page.options then
+        -- Single selectable field - carry optional flag through
+        return { { label = page.title, options = page.options,
+                   getValue = page.getValue, setValue = page.setValue,
+                   optional = page.optional } }
     elseif page.summary then
-      -- Summary page - show key-value pairs with scrolling
-      local maxLines = 4  -- Max visible lines on BW128
-      local scroll = state.summaryScroll or 0
-      
-      -- Build all summary lines first
-      local allLines = {}
-      for i, item in ipairs(page.summary) do
-        local value = item.getValue()
-        allLines[#allLines + 1] = item.label .. ": " .. value
-      end
-      allLines[#allLines + 1] = ""
-      allLines[#allLines + 1] = text
-      
-      -- Calculate scroll limits
-      local maxScroll = math.max(0, #allLines - maxLines)
-      if scroll > maxScroll then scroll = maxScroll end
-      if scroll < 0 then scroll = 0 end
-      state.summaryScroll = scroll
-      
-      -- Show visible lines
-      for i = scroll + 1, math.min(#allLines, scroll + maxLines) do
-        lines[#lines + 1] = allLines[i]
-      end
-      
-      -- Show scroll indicator if needed
-      if #allLines > maxLines then
-        lines[#lines + 1] = string.format("(%d/%d)", scroll + 1, #allLines)
-      end
-      
+        -- Read-only summary lines
+        local fields = {}
+        for _, item in ipairs(page.summary) do
+            fields[#fields + 1] = { label = item.label, value = item.getValue() }
+        end
+        return fields
+    end
+    return {}
+end
+
+----------------------------------------------------------------------
+-- Main handler: events + draw
+----------------------------------------------------------------------
+function ui.handlePage(page, text, radio, nav, event)
+
+    local fields   = getFields(page)
+    local fieldMax = math.max(0, #fields - 1)
+
+    -- Clamp field to valid range
+    if uiState.field > fieldMax then uiState.field = fieldMax end
+
+    --------------------------------------------------------------
+    -- EVENT HANDLING
+    --------------------------------------------------------------
+
+    -- NEXT_PAGE: advance to next page
+    if event == EVT_VIRTUAL_NEXT_PAGE then
+        uiState.edit = false
+        if page.isFinish then return "exit" end
+        -- Summary page: apply before advancing
+        if page.summary and page.onEnter then page.onEnter() end
+        nav.goNext()
+        uiState.dirty = true
+        return 0
+    end
+
+    -- PREV_PAGE: go back
+    if event == EVT_VIRTUAL_PREV_PAGE then
+        uiState.edit = false
+        if not nav.goPrev() then return "exit" end
+        uiState.dirty = true
+        return 0
+    end
+
+    -- EXIT: leave wizard
+    if event == EVT_VIRTUAL_EXIT then
+        return "exit"
+    end
+
+    -- ENTER: toggle edit mode on the current field
+    if event == EVT_VIRTUAL_ENTER then
+        local field = fields[uiState.field + 1]
+        if field and field.options then
+            uiState.edit  = not uiState.edit
+            blinkOn       = true
+            uiState.dirty = true
+        elseif page.isFinish then
+            return "exit"
+        elseif page.summary then
+            -- ENTER on summary = apply
+            if page.onEnter then page.onEnter() end
+            nav.goNext()
+            uiState.dirty = true
+        end
+        return 0
+    end
+
+    -- INC / DEC: scroll value (editing) or move between fields (not editing)
+    if event == EVT_VIRTUAL_INC or event == EVT_VIRTUAL_DEC then
+        local isInc = (event == EVT_VIRTUAL_INC)
+
+        if uiState.edit then
+            -- Scroll the value of the current field
+            local field = fields[uiState.field + 1]
+            if field and field.options and field.getValue and field.setValue then
+                local val    = field.getValue()
+                local maxVal = #field.options - 1
+                local minVal = field.optional and -1 or 0   -- -1 = "None" slot
+                if isInc and val < maxVal then
+                    field.setValue(val + 1)
+                    uiState.dirty = true
+                elseif not isInc and val > minVal then
+                    field.setValue(val - 1)
+                    uiState.dirty = true
+                end
+            end
+        else
+            -- Move between fields
+            if isInc and uiState.field < fieldMax then
+                uiState.field = uiState.field + 1
+                uiState.dirty = true
+            elseif not isInc and uiState.field > 0 then
+                uiState.field = uiState.field - 1
+                uiState.dirty = true
+            end
+        end
+        return 0
+    end
+
+    -- Keep blink running while in edit mode
+    if uiState.edit then updateBlink() end
+
+    --------------------------------------------------------------
+    -- DRAWING
+    --------------------------------------------------------------
+    if not uiState.dirty then return 0 end
+    uiState.dirty = false
+
+    lcd.clear()
+
+    -- Title bar: text inverted across top
+    lcd.drawText(2, 0, text, INVERS)
+
+    -- Layout: if image exists, left half = fields, right half = image
+    local hasImage = (page.image ~= nil)
+    local divX     = hasImage and (LCD_W / 2 - 1) or LCD_W
+
+    if hasImage then
+        lcd.drawLine(divX, 8, divX, LCD_H - 1, DOTTED, 0)
+    end
+
+    --------------------------------------------------------------
+    -- Page content
+    --------------------------------------------------------------
+    if page.options or page.fields then
+        -- Single-field pages: title bar is the label, just show >>> value at bottom
+        -- Multi-field pages: each field gets its own short label + >>> + value
+        local lineH  = 10
+        local single = (#fields == 1)
+        local startY = single and (LCD_H - lineH) or (LCD_H - (lineH * #fields * 2) - 2)
+
+        for i, field in ipairs(fields) do
+            local isSelected = (i - 1 == uiState.field)
+            local val        = field.getValue and field.getValue() or 0
+            local valText
+            if val == -1 and field.optional then
+                valText = "None"
+            else
+                valText = (field.options and field.options[val + 1]) or (field.value or "?")
+            end
+
+            local flags = 0
+            if isSelected then
+                flags = uiState.edit and (blinkOn and INVERS or 0) or INVERS
+            end
+
+            if single then
+                -- Just >>> value on one line at the bottom
+                lcd.drawText(4, LCD_H - 10, ">>>", 0)
+                lcd.drawText(28, LCD_H - 10, valText, flags)
+            else
+                -- Multi-field: label on one line, >>> value on next
+                local y = startY + (i - 1) * (lineH * 2)
+                lcd.drawText(4, y, field.label, 0)
+                lcd.drawText(4, y + lineH, ">>>", 0)
+                lcd.drawText(28, y + lineH, valText, flags)
+            end
+        end
+
+    elseif page.summary then
+        -- Summary: scrollable list of label: value
+        local lineH      = 9
+        local maxVisible = math.floor((LCD_H - 18) / lineH)
+        local scroll     = 0
+        if uiState.field >= maxVisible then
+            scroll = uiState.field - maxVisible + 1
+        end
+
+        local y = 10
+        for i = scroll + 1, math.min(#fields, scroll + maxVisible) do
+            local f     = fields[i]
+            local flags = (i - 1 == uiState.field) and INVERS or 0
+            lcd.drawText(4, y, f.label .. ": " .. (f.value or "?"), flags)
+            y = y + lineH
+        end
+
+        -- Bottom hint
+        lcd.drawText(4, LCD_H - 8, "ENTER=apply", SMLSIZE)
+
+    elseif page.isFinish then
+        lcd.drawText(4, 24, "Setup Complete!", 0)
+        lcd.drawText(4, 38, "Press EXIT", SMLSIZE)
+
     else
-      -- Simple text page
-      lines[1] = text
+        -- Plain text page
+        lcd.drawText(4, 20, text, SMLSIZE)
     end
-  else
-    -- Old simple format: renderPage(title, lines, state)
-    title = pageOrTitle
-    lines = textOrLines
-  end
-  
-  -- Draw title
-  lcd.drawText(2, 2, title, SMLSIZE)
-  
-  -- Draw lines
-  local y = 14
-  for i, line in ipairs(lines) do
-    local flags = SMLSIZE
-    -- Only apply highlight if using old format with state.highlight
-    if state and state.highlight and state.highlight == i then
-      flags = flags + INVERS
+
+    --------------------------------------------------------------
+    -- Image (right half)
+    --------------------------------------------------------------
+    if hasImage then
+        pcall(function()
+            lcd.drawPixmap(LCD_W / 2 + 2, LCD_H - 48, page.image)
+        end)
     end
-    lcd.drawText(4, y, line, flags)
-    y = y + 10
-    if y > LCD_H - 10 then break end  -- Stop if we run out of room
-  end
+
+    return 0
 end
 
 return ui

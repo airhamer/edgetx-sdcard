@@ -1,5 +1,27 @@
+---- #########################################################################
+---- #                                                                       #
+---- # Copyright (C) OpenTX                                                  #
+---- #                                                                       #
+---- # License GPLv2: http://www.gnu.org/licenses/gpl-2.0.html               #
+---- #                                                                       #
+---- # This program is free software; you can redistribute it and/or modify  #
+---- # it under the terms of the GNU General Public License version 2 as     #
+---- # published by the Free Software Foundation.                            #
+---- #                                                                       #
+---- # This program is distributed in the hope that it will be useful        #
+---- # but WITHOUT ANY WARRANTY; without even the implied warranty of        #
+---- # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         #
+---- # GNU General Public License for more details.                          #
+---- #                                                                       #
+---- #########################################################################
+
+-- Author: Airhamer / ErnestWorrel (2026)
 -- core_engine.lua
--- Universal wizard engine for all radio types
+-- Place in: <global>/TEMPLATES/1.Wizard/core/
+-- Universal wizard for all radio types - uses core_engine and ui modules
+-- Thin page manager - delegates event handling to each radio's UI module
+-- Each UI module handles its own navigation style (field select, edit, page nav)
+
 local function core_engine()
     
     local state = {
@@ -8,13 +30,6 @@ local function core_engine()
         radio = nil,
         ui = nil
     }
-    
-    local function findPage(id)
-        for i, p in ipairs(state.pages) do
-            if p.id == id then return p, i end
-        end
-        return nil
-    end
     
     local function chooseTextVariant(page)
         local radio = state.radio
@@ -31,101 +46,51 @@ local function core_engine()
         end
     end
     
-    local function handleEvent(event)
+    -- Page navigation helpers exposed to UI modules
+    local nav = {}
+    function nav.goNext()
         local page = state.pages[state.currentIndex]
-        if not page then return end
-        
-        -- Handle navigation based on page type
-        if page.options and page.getValue and page.setValue then
-            -- Page with selectable options
-            local maxVal = #page.options - 1  -- Options are 0-indexed
-            
-            if event == EVT_VIRTUAL_NEXT or event == EVT_PLUS_FIRST then
-                local currentVal = page.getValue()
-                if currentVal < maxVal then
-                    page.setValue(currentVal + 1)
-                end
-            elseif event == EVT_VIRTUAL_PREV or event == EVT_MINUS_FIRST then
-                local currentVal = page.getValue()
-                if currentVal > 0 then
-                    page.setValue(currentVal - 1)
-                end
-            elseif event == EVT_VIRTUAL_ENTER then
-                -- Move to next page
-                if page.next then
-                    local nextPage, idx = findPage(page.next)
-                    if nextPage then
-                        state.currentIndex = idx
-                    end
-                elseif state.currentIndex < #state.pages then
-                    state.currentIndex = state.currentIndex + 1
+        if page and page.next then
+            for i, p in ipairs(state.pages) do
+                if p.id == page.next then
+                    state.currentIndex = i
+                    if state.ui.resetPage then state.ui.resetPage() end
+                    return true
                 end
             end
-        elseif page.summary then
-            -- Summary page - handle scrolling and ENTER
-            if event == EVT_VIRTUAL_NEXT or event == EVT_PLUS_FIRST then
-                state.summaryScroll = (state.summaryScroll or 0) + 1
-            elseif event == EVT_VIRTUAL_PREV or event == EVT_MINUS_FIRST then
-                state.summaryScroll = math.max(0, (state.summaryScroll or 0) - 1)
-            elseif event == EVT_VIRTUAL_ENTER then
-                -- Call onEnter callback if it exists
-                if page.onEnter then
-                    page.onEnter()
-                end
-                -- Move to next page
-                if page.next then
-                    local nextPage, idx = findPage(page.next)
-                    if nextPage then
-                        state.currentIndex = idx
-                        state.summaryScroll = 0  -- Reset scroll for next time
-                    end
-                elseif state.currentIndex < #state.pages then
-                    state.currentIndex = state.currentIndex + 1
-                    state.summaryScroll = 0
-                end
-            end
-        elseif page.isFinish then
-            -- Finish page - EXIT exits the wizard
-            if event == EVT_VIRTUAL_EXIT then
-                return "exit"
-            end
-        else
-            -- Simple page - ENTER advances
-            if event == EVT_VIRTUAL_ENTER then
-                if page.next then
-                    local nextPage, idx = findPage(page.next)
-                    if nextPage then
-                        state.currentIndex = idx
-                    end
-                elseif state.currentIndex < #state.pages then
-                    state.currentIndex = state.currentIndex + 1
-                end
-            end
+        elseif state.currentIndex < #state.pages then
+            state.currentIndex = state.currentIndex + 1
+            if state.ui.resetPage then state.ui.resetPage() end
+            return true
         end
-        
-        -- Handle EXIT (go back)
-        if event == EVT_VIRTUAL_EXIT then
-            if state.currentIndex > 1 then
-                state.currentIndex = state.currentIndex - 1
-            else
-                return "exit"
-            end
+        return false
+    end
+    
+    function nav.goPrev()
+        if state.currentIndex > 1 then
+            state.currentIndex = state.currentIndex - 1
+            if state.ui.resetPage then state.ui.resetPage() end
+            return true
         end
+        return false  -- Signal: we're at page 1, exit
+    end
+    
+    function nav.currentPage()
+        return state.pages[state.currentIndex]
     end
     
     local function run(event)
-        local result = handleEvent(event)
-        if result == "exit" then
-            return "exit"
-        end
-        
         local page = state.pages[state.currentIndex]
         if not page then return 0 end
         
         local text = chooseTextVariant(page)
         
-        -- Call the UI render function
-        state.ui.renderPage(page, text, state, state.radio)
+        -- Let the UI module handle the event and rendering
+        -- UI returns "exit" if user wants to leave the wizard entirely
+        local result = state.ui.handlePage(page, text, state.radio, nav, event)
+        if result == "exit" then
+            return "exit"
+        end
         
         return 0
     end
@@ -135,6 +100,8 @@ local function core_engine()
         state.ui = ui
         state.pages = pages
         state.currentIndex = 1
+        
+        if ui.init then ui.init() end
         
         return { run = run }
     end

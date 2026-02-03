@@ -1,5 +1,26 @@
+---- #########################################################################
+---- #                                                                       #
+---- # Copyright (C) OpenTX                                                  #
+---- #                                                                       #
+---- # License GPLv2: http://www.gnu.org/licenses/gpl-2.0.html               #
+---- #                                                                       #
+---- # This program is free software; you can redistribute it and/or modify  #
+---- # it under the terms of the GNU General Public License version 2 as     #
+---- # published by the Free Software Foundation.                            #
+---- #                                                                       #
+---- # This program is distributed in the hope that it will be useful        #
+---- # but WITHOUT ANY WARRANTY; without even the implied warranty of        #
+---- # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         #
+---- # GNU General Public License for more details.                          #
+---- #                                                                       #
+---- #########################################################################
+
+-- Author: 3djc (2017)
+-- Update by: Offer Shmuely (2023)
+-- Update by: Alexander Gnauck (2025)
+-- Update by: Airhamer / ErnestWorrel (2026)
 -- multi-rotor.lua
--- Place in: /TEMPLATES/1.Wizard/lib/
+-- Place in: <global>/TEMPLATES/1.Wizard/lib/
 -- Universal wizard for all radio types - uses core_engine and ui modules
 
 return function(radio, ui)
@@ -16,6 +37,10 @@ return function(radio, ui)
     local STICK_NUMBER_RUD = 0
     
     local channels = { "CH1", "CH2", "CH3", "CH4", "CH5", "CH6", "CH7", "CH8" }
+    
+    -- Get image extension based on radio type
+    local IMG_DIR = "/TEMPLATES/1.Wizard/img/multirotor"
+    local imgExt = radio.isColor and ".png" or ".bmp"
     
     -- Get switch names dynamically from the radio
     local function getSwitchNames()
@@ -39,9 +64,9 @@ return function(radio, ui)
         rollCh = radio.defaultChannel(STICK_NUMBER_AIL),
         pitchCh = radio.defaultChannel(STICK_NUMBER_ELE),
         yawCh = radio.defaultChannel(STICK_NUMBER_RUD),
-        armSwitch = 0,      -- Index 0 in validSwitch array
-        beeperSwitch = 0,
-        modeSwitch = 0,
+        armSwitch = -1,     -- -1 = None (optional)
+        beeperSwitch = -1,
+        modeSwitch = -1,
     }
     
     -- Define pages with text variants for different screen types
@@ -55,6 +80,7 @@ return function(radio, ui)
                 bw128 = "Throttle",
                 color = "Select the channel for throttle control"
             },
+            image = IMG_DIR .. "/throttle" .. imgExt,
             options = channels,
             getValue = function() return modelData.throttleCh end,
             setValue = function(val) modelData.throttleCh = val end,
@@ -69,6 +95,7 @@ return function(radio, ui)
                 bw128 = "Roll",
                 color = "Select the channel for roll control"
             },
+            image = IMG_DIR .. "/roll" .. imgExt,
             options = channels,
             getValue = function() return modelData.rollCh end,
             setValue = function(val) modelData.rollCh = val end,
@@ -83,6 +110,7 @@ return function(radio, ui)
                 bw128 = "Pitch",
                 color = "Select the channel for pitch control"
             },
+            image = IMG_DIR .. "/pitch" .. imgExt,
             options = channels,
             getValue = function() return modelData.pitchCh end,
             setValue = function(val) modelData.pitchCh = val end,
@@ -97,6 +125,7 @@ return function(radio, ui)
                 bw128 = "Yaw",
                 color = "Select the channel for yaw control"
             },
+            image = IMG_DIR .. "/yaw" .. imgExt,
             options = channels,
             getValue = function() return modelData.yawCh end,
             setValue = function(val) modelData.yawCh = val end,
@@ -111,7 +140,9 @@ return function(radio, ui)
                 bw128 = "Arm",
                 color = "Select the switch to arm/disarm"
             },
+            image = IMG_DIR .. "/arm" .. imgExt,
             options = switchNames,
+            optional = true,
             getValue = function() return modelData.armSwitch end,
             setValue = function(val) modelData.armSwitch = val end,
             next = "beeper"
@@ -125,7 +156,9 @@ return function(radio, ui)
                 bw128 = "Beeper",
                 color = "Select the beeper switch"
             },
+            image = IMG_DIR .. "/beeper" .. imgExt,
             options = switchNames,
+            optional = true,
             getValue = function() return modelData.beeperSwitch end,
             setValue = function(val) modelData.beeperSwitch = val end,
             next = "mode"
@@ -139,7 +172,9 @@ return function(radio, ui)
                 bw128 = "Mode",
                 color = "Select the flight mode switch"
             },
+            image = IMG_DIR .. "/mode" .. imgExt,
             options = switchNames,
+            optional = true,
             getValue = function() return modelData.modeSwitch end,
             setValue = function(val) modelData.modeSwitch = val end,
             next = "summary"
@@ -155,12 +190,12 @@ return function(radio, ui)
             },
             summary = {
                 { label = "Throttle", getValue = function() return channels[modelData.throttleCh + 1] end },
-                { label = "Roll", getValue = function() return channels[modelData.rollCh + 1] end },
-                { label = "Pitch", getValue = function() return channels[modelData.pitchCh + 1] end },
-                { label = "Yaw", getValue = function() return channels[modelData.yawCh + 1] end },
-                { label = "Arm", getValue = function() return switchNames[modelData.armSwitch + 1] end },
-                { label = "Beeper", getValue = function() return switchNames[modelData.beeperSwitch + 1] end },
-                { label = "Mode", getValue = function() return switchNames[modelData.modeSwitch + 1] end },
+                { label = "Roll",     getValue = function() return channels[modelData.rollCh + 1] end },
+                { label = "Pitch",    getValue = function() return channels[modelData.pitchCh + 1] end },
+                { label = "Yaw",      getValue = function() return channels[modelData.yawCh + 1] end },
+                { label = "Arm",      getValue = function() return modelData.armSwitch == -1 and "None" or switchNames[modelData.armSwitch + 1] end },
+                { label = "Beeper",   getValue = function() return modelData.beeperSwitch == -1 and "None" or switchNames[modelData.beeperSwitch + 1] end },
+                { label = "Mode",     getValue = function() return modelData.modeSwitch == -1 and "None" or switchNames[modelData.modeSwitch + 1] end },
             },
             onEnter = function()
                 -- Create the model when user confirms
@@ -178,10 +213,16 @@ return function(radio, ui)
                 addMix(modelData.pitchCh, MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_ELE), "Pitch")
                 addMix(modelData.yawCh, MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_RUD), "Yaw")
                 
-                -- Add switch mixes (convert from array index to actual switch index)
-                addMix(4, MIXSRC_SA + radio.validSwitch[modelData.armSwitch + 1] - 1, "Arm")
-                addMix(5, MIXSRC_SA + radio.validSwitch[modelData.beeperSwitch + 1] - 1, "Beeper")
-                addMix(6, MIXSRC_SA + radio.validSwitch[modelData.modeSwitch + 1] - 1, "Mode")
+                -- Add switch mixes only if not set to None (-1)
+                if modelData.armSwitch >= 0 then
+                    addMix(4, MIXSRC_SA + radio.validSwitch[modelData.armSwitch + 1] - 1, "Arm")
+                end
+                if modelData.beeperSwitch >= 0 then
+                    addMix(5, MIXSRC_SA + radio.validSwitch[modelData.beeperSwitch + 1] - 1, "Beeper")
+                end
+                if modelData.modeSwitch >= 0 then
+                    addMix(6, MIXSRC_SA + radio.validSwitch[modelData.modeSwitch + 1] - 1, "Mode")
+                end
             end,
             next = "finish"
         },
