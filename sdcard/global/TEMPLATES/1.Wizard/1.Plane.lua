@@ -1,21 +1,41 @@
+---- #########################################################################
+---- #                                                                       #
+---- #                                                                       #
+---- # License GPLv2: http://www.gnu.org/licenses/gpl-2.0.html               #
+---- #                                                                       #
+---- # This program is free software; you can redistribute it and/or modify  #
+---- # it under the terms of the GNU General Public License version 2 as     #
+---- # published by the Free Software Foundation.                            #
+---- #                                                                       #
+---- # This program is distributed in the hope that it will be useful        #
+---- # but WITHOUT ANY WARRANTY; without even the implied warranty of        #
+---- # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         #
+---- # GNU General Public License for more details.                          #
+---- #                                                                       #
+---- #########################################################################
 
 -- Author: 3djc (2017)
 -- Update by: Offer Shmuely (2023)
 -- Update by: Alexander Gnauck (2025)
+-- Update by: Airhamer / ErnestWorrel (2026)
 
 -- Plane template entry point (official-style)
+-- 1.Plane.lua
+-- Place in: <global>/TEMPLATES/1.Wizard/
+-- Thin loader — works standalone (color) or via wizard.lua (BW)
 
-return function(radio)
-    local RUN_DIR  = "/TEMPLATES/1.Wizard"
-    local CORE_DIR = RUN_DIR .. "/core"
-    local LIB_DIR  = RUN_DIR .. "/lib"
+return function(radio, ui)
+    local BASE_DIR = "/TEMPLATES/1.Wizard"
+    local LIB_DIR  = BASE_DIR .. "/lib"
+    local CORE_DIR = BASE_DIR .. "/core"
 
-    -- Load UI module based on radio detection
-    local ui = loadScript(CORE_DIR .. "/" .. radio.uiModule)()
+    if not radio then
+        radio = assert(loadScript(CORE_DIR .. "/radio_detect.lua"))()()
+    end
+    if not ui then
+        ui = assert(loadScript(CORE_DIR .. "/" .. radio.uiModule))()
+    end
 
-    -- Load multirotor wizard logic
-    local wizardFunc = loadScript(LIB_DIR .. "/plane.lua")
-    return wizardFunc(radio, ui)
+    local builder = assert(loadScript(LIB_DIR .. "/plane.lua"))()
+    return builder(radio, ui)
 end
-
-

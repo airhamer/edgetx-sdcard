@@ -17,8 +17,23 @@
 -- Author: 3djc (2017)
 -- Update by: Offer Shmuely (2023)
 -- Update by: Alexander Gnauck (2025)
-local engine = loadScript("/TEMPLATES/1.Wizard/core/core_engine.lua")()
-local model = loadScript("/TEMPLATES/1.Wizard/lib/helicopter.lua")()
+-- Update by: Airhamer / ErnestWorrel (2026)
+-- 4.Helicopter.lua
+-- Place in: /TEMPLATES/1.Wizard/
+-- Thin loader — works standalone (color) or via wizard.lua (BW)
 
-return engine.runWizard(model.pages)
+return function(radio, ui)
+    local BASE_DIR = "/TEMPLATES/1.Wizard"
+    local LIB_DIR  = BASE_DIR .. "/lib"
+    local CORE_DIR = BASE_DIR .. "/core"
 
+    if not radio then
+        radio = assert(loadScript(CORE_DIR .. "/radio_detect.lua"))()()
+    end
+    if not ui then
+        ui = assert(loadScript(CORE_DIR .. "/" .. radio.uiModule))()
+    end
+
+    local builder = assert(loadScript(LIB_DIR .. "/helicopter.lua"))()
+    return builder(radio, ui)
+end
