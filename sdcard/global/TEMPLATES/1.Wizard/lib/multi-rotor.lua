@@ -20,7 +20,7 @@
 -- Update by: Alexander Gnauck (2025)
 -- Update by: Airhamer / ErnestWorrel (2026)
 -- multi-rotor.lua
--- Place in: <global>/TEMPLATES/1.Wizard/lib/
+-- Place in: /TEMPLATES/1.Wizard/lib/
 -- Universal wizard for all radio types - uses core_engine and ui modules
 
 return function(radio, ui)
