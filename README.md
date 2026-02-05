@@ -93,7 +93,8 @@ Display‑specific UI and images:
 BW radios now use:
 
 ```
-scripts/wizard/wizard.lua
+scripts/wizard/wizard.lua which on those radios is typically called by their associated wizardloader.lua
+located in   their associated folders eg.  sdcard/bw128x64/SCRIPTS/TOOLS/WizardLoader.lua
 ```
 
 This provides a template chooser and loads the selected template through the unified engine.
@@ -173,6 +174,7 @@ This unified wizard system modernizes the EdgeTX model‑creation workflow. It r
 It reduces complexity, improves maintainability, and delivers a consistent, reliable wizard experience across all EdgeTX radios.
 
 ---
+
 
 
 
