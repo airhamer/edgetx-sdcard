@@ -16,9 +16,7 @@
 ---- #########################################################################
 -- Update by: Airhamer / ErnestWorrel (2026)
 -- wizard.lua
--- Place in: global/SCRIPTS/WIZARD/  should work with all radios.
--- Possibly remove completely later and have all radios run the templates from
---   the add model screen like color radios do.
+-- Place in: /TEMPLATES/1.Wizard/
 
 local BASE_DIR = "/TEMPLATES/1.Wizard"
 local CORE_DIR = BASE_DIR .. "/core"
@@ -141,19 +139,21 @@ local function run(event)
     end
     
     -- Otherwise, we're in chooser mode
-    if event == EVT_VIRTUAL_NEXT or event == EVT_PLUS_FIRST then
+    -- BW212: INC (short press) = down, DEC_REPT (long press) = up
+    -- BW128/Color: NEXT/PREV or PLUS/MINUS
+    if event == EVT_VIRTUAL_INC or event == EVT_VIRTUAL_INC_REPT or 
+       event == EVT_VIRTUAL_NEXT or event == EVT_VIRTUAL_NEXT_PAGE or event == EVT_PLUS_FIRST then
         state.selection = math.min(#TEMPLATES, state.selection + 1)
-    elseif event == EVT_VIRTUAL_PREV or event == EVT_MINUS_FIRST then
+    elseif event == EVT_VIRTUAL_DEC_REPT or event == EVT_VIRTUAL_PREV or
+           event == EVT_VIRTUAL_PREV_PAGE or event == EVT_MINUS_FIRST then
         state.selection = math.max(1, state.selection - 1)
     elseif event == EVT_VIRTUAL_ENTER then
         -- Load selected template
         local template = TEMPLATES[state.selection]
         local path = BASE_DIR .. "/" .. template.file
         
-        -- Load and execute template (call it to get the loader function)
-        local templateFunc = assert(loadScript(path))()
-        -- Call the loader function with radio and ui to get wizard instance
-        state.activeWizard = templateFunc(radio, ui)
+        -- Load and call template - it auto-executes and returns wizard instance
+        state.activeWizard = assert(loadScript(path))()
         if state.activeWizard then
             state.mode = "running"
         end

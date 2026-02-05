@@ -49,9 +49,9 @@ return function(radio, ui)
         aileronCh  = radio.defaultChannel(STICK_NUMBER_AIL),
         elevatorCh = radio.defaultChannel(STICK_NUMBER_ELE),
         rudderCh   = radio.defaultChannel(STICK_NUMBER_RUD),
-        throttleCh = -1,          -- optional (electric glider)
-        flapSwitch    = -1,       -- optional
-        camberSwitch  = -1,       -- optional
+        throttleCh = -1,
+        flapSwitch    = -1,
+        camberSwitch  = -1,
     }
 
     local pages = {
@@ -64,7 +64,7 @@ return function(radio, ui)
                 bw128   = "Aileron",
                 color   = "Select the channel for aileron control"
             },
-            image   = IMG_DIR .. "/aileron" .. imgExt,
+            image   = IMG_DIR .. "/plane-1a" .. imgExt,
             options = channels,
             getValue = function() return modelData.aileronCh end,
             setValue = function(v) modelData.aileronCh = v end,
@@ -79,7 +79,7 @@ return function(radio, ui)
                 bw128   = "Elevator",
                 color   = "Select the channel for elevator control"
             },
-            image   = IMG_DIR .. "/elevator" .. imgExt,
+            image   = IMG_DIR .. "/tail-1" .. imgExt,
             options = channels,
             getValue = function() return modelData.elevatorCh end,
             setValue = function(v) modelData.elevatorCh = v end,
@@ -94,7 +94,7 @@ return function(radio, ui)
                 bw128   = "Rudder",
                 color   = "Select the channel for rudder control"
             },
-            image   = IMG_DIR .. "/rudder" .. imgExt,
+            image   = IMG_DIR .. "/tail-2" .. imgExt,
             options = channels,
             getValue = function() return modelData.rudderCh end,
             setValue = function(v) modelData.rudderCh = v end,
@@ -109,9 +109,9 @@ return function(radio, ui)
                 bw128   = "Throttle",
                 color   = "Throttle channel — set None if pure glider"
             },
-            image    = IMG_DIR .. "/throttle" .. imgExt,
+            image    = IMG_DIR .. "/prop" .. imgExt,
             options  = channels,
-            optional = true,          -- None = pure glider, no motor
+            optional = true,
             getValue = function() return modelData.throttleCh end,
             setValue = function(v) modelData.throttleCh = v end,
             next = "flap"
@@ -125,7 +125,7 @@ return function(radio, ui)
                 bw128   = "Flap",
                 color   = "Select the switch for flaps (or None)"
             },
-            image    = IMG_DIR .. "/flap" .. imgExt,
+            image    = IMG_DIR .. "/plane-1f" .. imgExt,
             options  = switchNames,
             optional = true,
             getValue = function() return modelData.flapSwitch end,
@@ -141,7 +141,7 @@ return function(radio, ui)
                 bw128   = "Camber",
                 color   = "Select the switch for camber (or None)"
             },
-            image    = IMG_DIR .. "/camber" .. imgExt,
+            image    = IMG_DIR .. "/plane-2a" .. imgExt,
             options  = switchNames,
             optional = true,
             getValue = function() return modelData.camberSwitch end,
@@ -173,17 +173,14 @@ return function(radio, ui)
                     model.insertMix(ch, 0, { source = src, name = name })
                 end
 
-                -- Required channels
                 addMix(modelData.aileronCh,  MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_AIL), "Ail")
                 addMix(modelData.elevatorCh, MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_ELE), "Ele")
                 addMix(modelData.rudderCh,   MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_RUD), "Rud")
 
-                -- Optional throttle (electric glider)
                 if modelData.throttleCh >= 0 then
                     addMix(modelData.throttleCh, MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_THR), "Thr")
                 end
 
-                -- Optional switches
                 if modelData.flapSwitch >= 0 then
                     addMix(4, MIXSRC_SA + radio.validSwitch[modelData.flapSwitch + 1] - 1, "Flap")
                 end

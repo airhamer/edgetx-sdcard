@@ -21,21 +21,32 @@
 
 -- Plane template entry point (official-style)
 -- 1.Plane.lua
--- Place in: <global>/TEMPLATES/1.Wizard/
--- Thin loader — works standalone (color) or via wizard.lua (BW)
+-- Place in: /TEMPLATES/1.Wizard/
+-- Works standalone (color radios call directly) or via wizard.lua (BW radios)
 
-return function(radio, ui)
-    local BASE_DIR = "/TEMPLATES/1.Wizard"
-    local LIB_DIR  = BASE_DIR .. "/lib"
-    local CORE_DIR = BASE_DIR .. "/core"
+local BASE_DIR = "/TEMPLATES/1.Wizard"
+local LIB_DIR  = BASE_DIR .. "/lib"
+local CORE_DIR = BASE_DIR .. "/core"
 
+-- Detect if being called standalone (color) or via wizard.lua (BW)
+local function loader(radio, ui)
     if not radio then
         radio = assert(loadScript(CORE_DIR .. "/radio_detect.lua"))()()
     end
     if not ui then
         ui = assert(loadScript(CORE_DIR .. "/" .. radio.uiModule))()
     end
-
+    
     local builder = assert(loadScript(LIB_DIR .. "/plane.lua"))()
     return builder(radio, ui)
+end
+
+-- If called with parameters (from wizard.lua), return the loader function
+-- If called standalone (from EdgeTX template system), auto-execute
+if ... then
+    -- Called with parameters from wizard.lua
+    return loader
+else
+    -- Called standalone from template system - auto-execute
+    return loader(nil, nil)
 end

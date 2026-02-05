@@ -20,22 +20,17 @@
 -- Update by: Airhamer / ErnestWorrel (2026)
 -- helicopter.lua
 -- Place in: /TEMPLATES/1.Wizard/lib/
--- Helicopter (simplified collective-pitch or fixed-pitch).
--- Channels: Throttle, Collective (pitch), Cyclic Pitch (fore/aft), Yaw (tail)
--- Optional: Governor switch, Idle-up / Flight-mode switch
--- Note: full swash geometry (120° CCPM etc.) is handled by the FC or
---       EdgeTX mixers added after the wizard — this wizard just assigns
---       the base channels and optional switches.
+-- Helicopter (simplified collective-pitch or fixed-pitch)
 
 return function(radio, ui)
 
     local CORE_DIR = "/TEMPLATES/1.Wizard/core"
     local engine   = assert(loadScript(CORE_DIR .. "/core_engine.lua"))()()
 
-    local STICK_NUMBER_AIL = 3   -- cyclic roll (left/right) — not asked, mapped by FC
-    local STICK_NUMBER_ELE = 1   -- cyclic pitch (fore/aft)
-    local STICK_NUMBER_THR = 2   -- throttle stick (also collective on collective models)
-    local STICK_NUMBER_RUD = 0   -- yaw / tail rotor
+    local STICK_NUMBER_AIL = 3
+    local STICK_NUMBER_ELE = 1
+    local STICK_NUMBER_THR = 2
+    local STICK_NUMBER_RUD = 0
 
     local channels = { "CH1", "CH2", "CH3", "CH4", "CH5", "CH6", "CH7", "CH8" }
 
@@ -51,11 +46,11 @@ return function(radio, ui)
 
     local modelData = {
         throttleCh      = radio.defaultChannel(STICK_NUMBER_THR),
-        collectiveCh    = radio.defaultChannel(STICK_NUMBER_ELE),   -- collective on ele stick by convention
-        cyclicPitchCh   = radio.defaultChannel(STICK_NUMBER_AIL),   -- fore/aft on ail stick
+        collectiveCh    = radio.defaultChannel(STICK_NUMBER_ELE),
+        cyclicPitchCh   = radio.defaultChannel(STICK_NUMBER_AIL),
         yawCh           = radio.defaultChannel(STICK_NUMBER_RUD),
-        governorSwitch  = -1,   -- optional
-        modeSwitch      = -1,   -- optional (idle-up / flight mode)
+        governorSwitch  = -1,
+        modeSwitch      = -1,
     }
 
     local pages = {
@@ -68,7 +63,7 @@ return function(radio, ui)
                 bw128   = "Throttle",
                 color   = "Select the channel for throttle (motor)"
             },
-            image   = IMG_DIR .. "/throttle" .. imgExt,
+            image   = IMG_DIR .. "/heli-throttle" .. imgExt,
             options = channels,
             getValue = function() return modelData.throttleCh end,
             setValue = function(v) modelData.throttleCh = v end,
@@ -83,7 +78,7 @@ return function(radio, ui)
                 bw128   = "Collective",
                 color   = "Select the channel for collective pitch"
             },
-            image   = IMG_DIR .. "/collective" .. imgExt,
+            image   = IMG_DIR .. "/heli-elev" .. imgExt,
             options = channels,
             getValue = function() return modelData.collectiveCh end,
             setValue = function(v) modelData.collectiveCh = v end,
@@ -98,7 +93,7 @@ return function(radio, ui)
                 bw128   = "Cyclic P",
                 color   = "Select the channel for cyclic pitch (fore/aft)"
             },
-            image   = IMG_DIR .. "/cyclic" .. imgExt,
+            image   = IMG_DIR .. "/heli-ailer" .. imgExt,
             options = channels,
             getValue = function() return modelData.cyclicPitchCh end,
             setValue = function(v) modelData.cyclicPitchCh = v end,
@@ -113,7 +108,7 @@ return function(radio, ui)
                 bw128   = "Yaw",
                 color   = "Select the channel for yaw (tail rotor)"
             },
-            image   = IMG_DIR .. "/yaw" .. imgExt,
+            image   = IMG_DIR .. "/heli-rud" .. imgExt,
             options = channels,
             getValue = function() return modelData.yawCh end,
             setValue = function(v) modelData.yawCh = v end,
@@ -128,7 +123,7 @@ return function(radio, ui)
                 bw128   = "Governor",
                 color   = "Select the switch for governor on/off (or None)"
             },
-            image    = IMG_DIR .. "/governor" .. imgExt,
+            image    = IMG_DIR .. "/heli-switch" .. imgExt,
             options  = switchNames,
             optional = true,
             getValue = function() return modelData.governorSwitch end,
@@ -144,7 +139,7 @@ return function(radio, ui)
                 bw128   = "Mode",
                 color   = "Select the switch for idle-up / flight mode (or None)"
             },
-            image    = IMG_DIR .. "/mode" .. imgExt,
+            image    = IMG_DIR .. "/heli-switch" .. imgExt,
             options  = switchNames,
             optional = true,
             getValue = function() return modelData.modeSwitch end,
@@ -176,13 +171,11 @@ return function(radio, ui)
                     model.insertMix(ch, 0, { source = src, name = name })
                 end
 
-                -- Base heli channels
                 addMix(modelData.throttleCh,    MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_THR), "Thr")
                 addMix(modelData.collectiveCh,  MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_ELE), "Coll")
                 addMix(modelData.cyclicPitchCh, MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_AIL), "CycP")
                 addMix(modelData.yawCh,         MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_RUD), "Yaw")
 
-                -- Optional switches
                 if modelData.governorSwitch >= 0 then
                     addMix(4, MIXSRC_SA + radio.validSwitch[modelData.governorSwitch + 1] - 1, "Gov")
                 end

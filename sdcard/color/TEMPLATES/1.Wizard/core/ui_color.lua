@@ -17,9 +17,6 @@
 
 -- Author: Airhamer / ErnestWorrel (2026)
 -- ui_color.lua
--- Place in: <color>/TEMPLATES/1.Wizard/core/
--- Universal wizard for all radio types - uses core_engine and ui modules-- ui_bw212.lua
--- Owns: drawing.  Events handled by ui_common.-- ui_color.lua
 -- Color screen UI (e.g. RadioMaster TX16S MKII, FrSky X12)
 -- Owns: drawing.  Events handled by ui_common.
 --
@@ -72,8 +69,8 @@ function ui.handlePage(page, text, radio, nav, event)
 
     -- Title bar: filled rect + white text
     local titleH = 30
-    lcd.drawFilledRect(0, 0, LCD_W, titleH, SOLID, COLOR_THEME_FOCUS)
-    lcd.drawText(12, 6, text, MIDSIZE + COLOR_THEME_BRIGHT)
+    lcd.drawFilledRectangle(0, 0, LCD_W, titleH, GREY)
+    lcd.drawText(12, 6, text, MIDSIZE)
 
     -- Layout: image on right if present
     local hasImage  = (page.image ~= nil)
@@ -81,7 +78,7 @@ function ui.handlePage(page, text, radio, nav, event)
     local imgZoneW  = math.floor(LCD_W * 0.40)
     local divX      = hasImage and (LCD_W - imgZoneW - 2) or LCD_W
     if hasImage then
-        lcd.drawLine(divX, titleH, divX, LCD_H - 1, SOLID, COLOR_THEME_SECONDARY)
+        lcd.drawLine(divX, titleH, divX, LCD_H - 1, SOLID, GREY)
     end
 
     -- ---- page content ----
@@ -97,7 +94,7 @@ function ui.handlePage(page, text, radio, nav, event)
                             and (MIDSIZE + BLINK + INVERS)
                             or  (MIDSIZE + INVERS)
             local y = titleH + math.floor((LCD_H - titleH - lineH) / 2)
-            lcd.drawText(16, y,            ">>>", MIDSIZE + COLOR_THEME_SECONDARY)
+            lcd.drawText(16, y,            ">>>", MIDSIZE)
             lcd.drawText(56, y,            valText, flags)
         else
             -- Multi-field: stacked in content area
@@ -111,8 +108,8 @@ function ui.handlePage(page, text, radio, nav, event)
                             or  INVERS
                 end
                 local y = startY + (i - 1) * lineH
-                lcd.drawText(16, y,  field.label, SMLSIZE + COLOR_THEME_SECONDARY)
-                lcd.drawText(16, y + 13, ">>>", SMLSIZE + COLOR_THEME_SECONDARY)
+                lcd.drawText(16, y,  field.label, SMLSIZE)
+                lcd.drawText(16, y + 13, ">>>", SMLSIZE)
                 lcd.drawText(52, y + 13, common.resolveValue(field), flags)
             end
         end
@@ -125,19 +122,19 @@ function ui.handlePage(page, text, radio, nav, event)
         local y = titleH + 8
         for i = scroll + 1, math.min(#fields, scroll + maxVisible) do
             local flags = (i - 1 == uiState.field)
-                          and (INVERS + COLOR_THEME_BRIGHT)
-                          or  COLOR_THEME_BRIGHT
+                          and (INVERS)
+                          or  
             lcd.drawText(16, y, fields[i].label .. ": " .. (fields[i].value or "?"), flags)
             y = y + lineH
         end
-        lcd.drawText(16, LCD_H - 22, "ENTER = apply", SMLSIZE + COLOR_THEME_SECONDARY)
+        lcd.drawText(16, LCD_H - 22, "ENTER = apply", SMLSIZE)
 
     elseif page.isFinish then
-        lcd.drawText(16, LCD_H / 2 - 20, "Setup Complete!", MIDSIZE + COLOR_THEME_BRIGHT)
-        lcd.drawText(16, LCD_H / 2 + 10, "Press EXIT to finish", SMLSIZE + COLOR_THEME_SECONDARY)
+        lcd.drawText(16, LCD_H / 2 - 20, "Setup Complete!", MIDSIZE)
+        lcd.drawText(16, LCD_H / 2 + 10, "Press EXIT to finish", SMLSIZE)
 
     else
-        lcd.drawText(16, titleH + 20, text, SMLSIZE + COLOR_THEME_BRIGHT)
+        lcd.drawText(16, titleH + 20, text, SMLSIZE)
     end
 
     -- Image (right zone, vertically centred in content area)
@@ -146,7 +143,10 @@ function ui.handlePage(page, text, radio, nav, event)
             -- Approximate image as 96x96; centre vertically in content area
             local imgH = 96
             local imgY = titleH + math.floor((LCD_H - titleH - imgH) / 2)
-            lcd.drawBitmap(page.image, divX + 8, imgY)
+            local bmp = Bitmap.open(page.image)
+            if bmp then
+                lcd.drawBitmap(bmp, divX + 8, imgY)
+            end
         end)
     end
 

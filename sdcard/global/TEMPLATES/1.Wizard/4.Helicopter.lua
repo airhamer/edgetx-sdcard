@@ -20,20 +20,26 @@
 -- Update by: Airhamer / ErnestWorrel (2026)
 -- 4.Helicopter.lua
 -- Place in: /TEMPLATES/1.Wizard/
--- Thin loader — works standalone (color) or via wizard.lua (BW)
+-- Works standalone (color radios call directly) or via wizard.lua (BW radios)
 
-return function(radio, ui)
-    local BASE_DIR = "/TEMPLATES/1.Wizard"
-    local LIB_DIR  = BASE_DIR .. "/lib"
-    local CORE_DIR = BASE_DIR .. "/core"
+local BASE_DIR = "/TEMPLATES/1.Wizard"
+local LIB_DIR  = BASE_DIR .. "/lib"
+local CORE_DIR = BASE_DIR .. "/core"
 
+local function loader(radio, ui)
     if not radio then
         radio = assert(loadScript(CORE_DIR .. "/radio_detect.lua"))()()
     end
     if not ui then
         ui = assert(loadScript(CORE_DIR .. "/" .. radio.uiModule))()
     end
-
+    
     local builder = assert(loadScript(LIB_DIR .. "/helicopter.lua"))()
     return builder(radio, ui)
+end
+
+if ... then
+    return loader
+else
+    return loader(nil, nil)
 end

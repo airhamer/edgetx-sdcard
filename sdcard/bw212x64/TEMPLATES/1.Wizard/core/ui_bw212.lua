@@ -17,9 +17,7 @@
 
 -- Author: Airhamer / ErnestWorrel (2026)
 -- ui_bw212.lua
--- Place in: <bw212x64>/TEMPLATES/1.Wizard/core/
--- Universal wizard for all radio types - uses core_engine and ui modules-- ui_bw212.lua
--- BW 212x64 UI (e.g. FrSky X9D+)
+-- BW 212x64 UI (e.g. FrSky X10, RadioMaster TX16S)
 -- Owns: drawing.  Events handled by ui_common.
 --
 -- Differences from bw128:
@@ -68,7 +66,7 @@ function ui.handlePage(page, text, radio, nav, event)
     lcd.clear()
 
     -- Title bar: filled grey background, white text
-    lcd.drawRect(0, 0, LCD_W, 12, SOLID, GREY_DEFAULT)
+    lcd.drawFilledRectangle(0, 0, LCD_W, 12, GREY_DEFAULT)
     lcd.drawText(4, 1, text, INVERS)
 
     -- Layout split

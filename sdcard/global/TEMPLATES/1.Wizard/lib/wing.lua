@@ -21,8 +21,6 @@
 -- wing.lua
 -- Place in: /TEMPLATES/1.Wizard/lib/
 -- Flying wing: Elevon L, Elevon R, optional Throttle, optional Flap/Camber switches
--- Wings typically use elevons (combined aileron+elevator) on each side.
--- The FC or mixer handles the elevon mixing; we just assign the channels.
 
 return function(radio, ui)
 
@@ -45,14 +43,12 @@ return function(radio, ui)
         switchNames[i + 1] = name or ("SW" .. i)
     end
 
-    -- Elevon L defaults to aileron stick channel, R to elevator stick channel
-    -- (common convention; user can swap on next page)
     local modelData = {
         elevonLCh    = radio.defaultChannel(STICK_NUMBER_AIL),
         elevonRCh    = radio.defaultChannel(STICK_NUMBER_ELE),
-        throttleCh   = -1,     -- optional (powered wing)
-        flapSwitch   = -1,     -- optional
-        camberSwitch = -1,     -- optional
+        throttleCh   = -1,
+        flapSwitch   = -1,
+        camberSwitch = -1,
     }
 
     local pages = {
@@ -65,7 +61,7 @@ return function(radio, ui)
                 bw128   = "Elevon L",
                 color   = "Select the channel for the left elevon"
             },
-            image   = IMG_DIR .. "/elevonL" .. imgExt,
+            image   = IMG_DIR .. "/plane" .. imgExt,
             options = channels,
             getValue = function() return modelData.elevonLCh end,
             setValue = function(v) modelData.elevonLCh = v end,
@@ -80,7 +76,7 @@ return function(radio, ui)
                 bw128   = "Elevon R",
                 color   = "Select the channel for the right elevon"
             },
-            image   = IMG_DIR .. "/elevonR" .. imgExt,
+            image   = IMG_DIR .. "/plane" .. imgExt,
             options = channels,
             getValue = function() return modelData.elevonRCh end,
             setValue = function(v) modelData.elevonRCh = v end,
@@ -95,7 +91,7 @@ return function(radio, ui)
                 bw128   = "Throttle",
                 color   = "Throttle channel — set None if unpowered"
             },
-            image    = IMG_DIR .. "/throttle" .. imgExt,
+            image    = IMG_DIR .. "/prop" .. imgExt,
             options  = channels,
             optional = true,
             getValue = function() return modelData.throttleCh end,
@@ -111,7 +107,7 @@ return function(radio, ui)
                 bw128   = "Flap",
                 color   = "Select the switch for flaps (or None)"
             },
-            image    = IMG_DIR .. "/flap" .. imgExt,
+            image    = IMG_DIR .. "/plane-2a" .. imgExt,
             options  = switchNames,
             optional = true,
             getValue = function() return modelData.flapSwitch end,
@@ -127,7 +123,7 @@ return function(radio, ui)
                 bw128   = "Camber",
                 color   = "Select the switch for camber (or None)"
             },
-            image    = IMG_DIR .. "/camber" .. imgExt,
+            image    = IMG_DIR .. "/drudder-1" .. imgExt,
             options  = switchNames,
             optional = true,
             getValue = function() return modelData.camberSwitch end,
@@ -158,16 +154,13 @@ return function(radio, ui)
                     model.insertMix(ch, 0, { source = src, name = name })
                 end
 
-                -- Elevons: L mapped to aileron stick, R to elevator stick
                 addMix(modelData.elevonLCh, MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_AIL), "ElevL")
                 addMix(modelData.elevonRCh, MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_ELE), "ElevR")
 
-                -- Optional throttle
                 if modelData.throttleCh >= 0 then
                     addMix(modelData.throttleCh, MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_THR), "Thr")
                 end
 
-                -- Optional switches
                 if modelData.flapSwitch >= 0 then
                     addMix(4, MIXSRC_SA + radio.validSwitch[modelData.flapSwitch + 1] - 1, "Flap")
                 end

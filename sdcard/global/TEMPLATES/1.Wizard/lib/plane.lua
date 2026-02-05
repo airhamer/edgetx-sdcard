@@ -47,16 +47,13 @@ return function(radio, ui)
         switchNames[i + 1] = name or ("SW" .. i)
     end
 
-    -- Model data
-    -- Channels: 0-based (0 = CH1)
-    -- Switches: 0-based index into validSwitch  |  -1 = None
     local modelData = {
         aileronCh  = radio.defaultChannel(STICK_NUMBER_AIL),
         elevatorCh = radio.defaultChannel(STICK_NUMBER_ELE),
         throttleCh = radio.defaultChannel(STICK_NUMBER_THR),
         rudderCh   = radio.defaultChannel(STICK_NUMBER_RUD),
-        flapSwitch    = -1,   -- optional
-        retractSwitch = -1,   -- optional
+        flapSwitch    = -1,
+        retractSwitch = -1,
     }
 
     local pages = {
@@ -69,7 +66,7 @@ return function(radio, ui)
                 bw128   = "Aileron",
                 color   = "Select the channel for aileron control"
             },
-            image   = IMG_DIR .. "/aileron" .. imgExt,
+            image   = IMG_DIR .. "/ailerons-0" .. imgExt,
             options = channels,
             getValue = function() return modelData.aileronCh end,
             setValue = function(v) modelData.aileronCh = v end,
@@ -84,7 +81,7 @@ return function(radio, ui)
                 bw128   = "Elevator",
                 color   = "Select the channel for elevator control"
             },
-            image   = IMG_DIR .. "/elevator" .. imgExt,
+            image   = IMG_DIR .. "/tail-1" .. imgExt,
             options = channels,
             getValue = function() return modelData.elevatorCh end,
             setValue = function(v) modelData.elevatorCh = v end,
@@ -99,7 +96,7 @@ return function(radio, ui)
                 bw128   = "Throttle",
                 color   = "Select the channel for throttle"
             },
-            image   = IMG_DIR .. "/throttle" .. imgExt,
+            image   = IMG_DIR .. "/prop" .. imgExt,
             options = channels,
             getValue = function() return modelData.throttleCh end,
             setValue = function(v) modelData.throttleCh = v end,
@@ -114,7 +111,7 @@ return function(radio, ui)
                 bw128   = "Rudder",
                 color   = "Select the channel for rudder control"
             },
-            image   = IMG_DIR .. "/rudder" .. imgExt,
+            image   = IMG_DIR .. "/tail-2" .. imgExt,
             options = channels,
             getValue = function() return modelData.rudderCh end,
             setValue = function(v) modelData.rudderCh = v end,
@@ -129,7 +126,7 @@ return function(radio, ui)
                 bw128   = "Flap",
                 color   = "Select the switch for flaps (or None)"
             },
-            image    = IMG_DIR .. "/flap" .. imgExt,
+            image    = IMG_DIR .. "/brakes-1" .. imgExt,
             options  = switchNames,
             optional = true,
             getValue = function() return modelData.flapSwitch end,
@@ -145,7 +142,7 @@ return function(radio, ui)
                 bw128   = "Retract",
                 color   = "Select the switch for retractable gear (or None)"
             },
-            image    = IMG_DIR .. "/retract" .. imgExt,
+            image    = IMG_DIR .. "/servo" .. imgExt,
             options  = switchNames,
             optional = true,
             getValue = function() return modelData.retractSwitch end,
@@ -177,13 +174,11 @@ return function(radio, ui)
                     model.insertMix(ch, 0, { source = src, name = name })
                 end
 
-                -- Standard AETHR channel mixes
                 addMix(modelData.aileronCh,  MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_AIL), "Ail")
                 addMix(modelData.elevatorCh, MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_ELE), "Ele")
                 addMix(modelData.throttleCh, MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_THR), "Thr")
                 addMix(modelData.rudderCh,   MIXSRC_FIRST_INPUT + radio.defaultChannel(STICK_NUMBER_RUD), "Rud")
 
-                -- Optional switch mixes
                 if modelData.flapSwitch >= 0 then
                     addMix(4, MIXSRC_SA + radio.validSwitch[modelData.flapSwitch + 1] - 1, "Flap")
                 end
