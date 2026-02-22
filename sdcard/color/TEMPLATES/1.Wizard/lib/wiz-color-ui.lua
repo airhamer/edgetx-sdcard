@@ -1,11 +1,30 @@
 ---- #########################################################################
 ---- #                                                                       #
----- # UI Module for Color Radios (LVGL)                                    #
----- # Based on original wizard-ui.lua structure                            #
----- #                                                                       #
+---- # Copyright (C) EdgeTX                                                  #
+-----#                                                                       #
+-----# Credits: graphics by https://github.com/jrwieland                     #
+-----#                                                                       #
 ---- # License GPLv2: http://www.gnu.org/licenses/gpl-2.0.html               #
 ---- #                                                                       #
+---- # This program is free software; you can redistribute it and/or modify  #
+---- # it under the terms of the GNU General Public License version 2 as     #
+---- # published by the Free Software Foundation.                            #
+---- #                                                                       #
+---- # This program is distributed in the hope that it will be useful        #
+---- # but WITHOUT ANY WARRANTY; without even the implied warranty of        #
+---- # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         #
+---- # GNU General Public License for more details.                          #
+---- #                                                                       #
 ---- #########################################################################
+
+-- Original author: Alexander Gnauck (2025)
+-- Color-radio UI module for the EdgeTX model wizard.
+-- Implements the wizard UI API using native LVGL calls.
+-- On color radios wizard-ui.lua is used directly; this file exists as a
+-- named reference copy showing the color implementation in isolation, and
+-- as the baseline from which BW shim modules (wiz-bw128-ui.lua,
+-- wiz-bw212-ui.lua) were derived.
+-- See DEVELOPER.md in this directory for the full page/settings API.
 
 local IMG_DIR = "/TEMPLATES/1.Wizard/img"
 
@@ -14,7 +33,7 @@ local wizard = {}
 -- useful to show lines for layout debugging
 local THICKNESS = 0
 local LANDSCAPE = 0
-local PORTRAIT = 1
+local PORTRAIT  = 1
 
 local ORIENTATION = (LCD_W > LCD_H) and LANDSCAPE or PORTRAIT
 
@@ -26,7 +45,7 @@ end
 
 local function closeDialog()
 	lvgl.confirm({
-		title = "Exit",
+		title   = "Exit",
 		message = "Do you really want to exit the model wizard?",
 		confirm = function()
 			exit = true
@@ -38,97 +57,83 @@ end
 ---@param settings table
 function wizard.page(settings)
 	if ORIENTATION == LANDSCAPE then
-		-- landscape layout
 		return {
 			{
-				type = "page",
-				title = settings.title,
-				subtitle = settings.subtitle,
-				flexPad = 0,
-				flexFlow = lvgl.FLOW_ROW,
-				align = CENTER | VTOP,
+				type       = "page",
+				title      = settings.title,
+				subtitle   = settings.subtitle,
+				flexPad    = 0,
+				flexFlow   = lvgl.FLOW_ROW,
+				align      = CENTER | VTOP,
 				backButton = true,
 				nextButton = {
-					press = settings.nextFunc,
-					active = function()
-						return settings.hasNext
-					end,
+					press  = settings.nextFunc,
+					active = function() return settings.hasNext end,
 				},
 				prevButton = {
-					press = settings.previousFunc,
-					active = function()
-						return settings.hasPrevious
-					end,
+					press  = settings.previousFunc,
+					active = function() return settings.hasPrevious end,
 				},
-				back = closeDialog,
+				back     = closeDialog,
 				children = {
-					-- main rect for settings
 					{
-						type = "rectangle",
-						w = lvgl.PERCENT_SIZE + 60,
-						h = lvgl.PERCENT_SIZE + 100,
+						type      = "rectangle",
+						w         = lvgl.PERCENT_SIZE + 60,
+						h         = lvgl.PERCENT_SIZE + 100,
 						thickness = THICKNESS,
-						flexFlow = lvgl.FLOW_COLUMN,
-						align = LEFT | VTOP,
-						children = settings.children1,
+						flexFlow  = lvgl.FLOW_COLUMN,
+						align     = LEFT | VTOP,
+						children  = settings.children1,
 					},
-					-- image rect
 					{
-						type = "rectangle",
+						type      = "rectangle",
 						scrollBar = false,
-						w = lvgl.PERCENT_SIZE + 40,
-						h = lvgl.PERCENT_SIZE + 100,
+						w         = lvgl.PERCENT_SIZE + 40,
+						h         = lvgl.PERCENT_SIZE + 100,
 						thickness = THICKNESS,
-						flexFlow = lvgl.FLOW_COLUMN,
-						children = settings.children2,
+						flexFlow  = lvgl.FLOW_COLUMN,
+						children  = settings.children2,
 					},
 				},
 			},
 		}
 	else
-		-- portrait layout
 		return {
 			{
-				type = "page",
-				title = settings.title,
-				subtitle = settings.subtitle,
-				flexPad = 0,
-				flexFlow = lvgl.FLOW_COLUMN,
-				align = CENTER | VTOP,
+				type       = "page",
+				title      = settings.title,
+				subtitle   = settings.subtitle,
+				flexPad    = 0,
+				flexFlow   = lvgl.FLOW_COLUMN,
+				align      = CENTER | VTOP,
 				backButton = true,
 				nextButton = {
-					press = settings.nextFunc,
-					active = function()
-						return settings.hasNext
-					end,
+					press  = settings.nextFunc,
+					active = function() return settings.hasNext end,
 				},
 				prevButton = {
-					press = settings.previousFunc,
-					active = function()
-						return settings.hasPrevious
-					end,
+					press  = settings.previousFunc,
+					active = function() return settings.hasPrevious end,
 				},
-				back = closeDialog,
+				back     = closeDialog,
 				children = {
-					-- main rect for settings
 					{
-						type = "rectangle",
-						w = lvgl.PERCENT_SIZE + 100,
-						h = lvgl.PERCENT_SIZE + 60,
+						type      = "rectangle",
+						w         = lvgl.PERCENT_SIZE + 100,
+						h         = lvgl.PERCENT_SIZE + 60,
 						thickness = THICKNESS,
-						flexFlow = lvgl.FLOW_COLUMN,
-						align = LEFT | VTOP,
-						children = settings.children1,
+						flexFlow  = lvgl.FLOW_COLUMN,
+						align     = LEFT | VTOP,
+						children  = settings.children1,
 					},
-					-- image rect
 					{
-						type = "rectangle",
+						type      = "rectangle",
 						scrollBar = false,
-						w = lvgl.PERCENT_SIZE + 100,
-						h = lvgl.PERCENT_SIZE + 40,
+						w         = lvgl.PERCENT_SIZE + 100,
+						h         = lvgl.PERCENT_SIZE + 40,
 						thickness = THICKNESS,
-						flexFlow = lvgl.FLOW_COLUMN,
-						children = settings.children2,
+						flexFlow  = lvgl.FLOW_COLUMN,
+						children  = settings.children2,
 					},
 				},
 			},
@@ -138,33 +143,33 @@ end
 
 function wizard.settings(settings)
 	return {
-		type = "rectangle",
-		flexPad = 0,
-		flexFlow = lvgl.FLOW_ROW,
+		type      = "rectangle",
+		flexPad   = 0,
+		flexFlow  = lvgl.FLOW_ROW,
 		thickness = THICKNESS,
-		w = lvgl.PERCENT_SIZE + 100,
-		visible = settings.visible,
-		children = {
+		w         = lvgl.PERCENT_SIZE + 100,
+		visible   = settings.visible,
+		children  = {
 			{
-				type = "rectangle",
+				type      = "rectangle",
 				thickness = THICKNESS,
-				w = lvgl.PERCENT_SIZE + 60,
-				children = {
+				w         = lvgl.PERCENT_SIZE + 60,
+				children  = {
 					{
-						type = "label",
-						w = lvgl.PERCENT_SIZE + 100,
+						type  = "label",
+						w     = lvgl.PERCENT_SIZE + 100,
 						color = COLOR_THEME_PRIMARY1,
-						text = settings.title,
+						text  = settings.title,
 					},
 				},
 			},
 			{
-				type = "rectangle",
+				type      = "rectangle",
 				thickness = THICKNESS,
-				w = lvgl.PERCENT_SIZE + 40,
-				flexFlow = lvgl.FLOW_ROW,
-				align = LEFT | VCENTER,
-				children = settings.children,
+				w         = lvgl.PERCENT_SIZE + 40,
+				flexFlow  = lvgl.FLOW_ROW,
+				align     = LEFT | VCENTER,
+				children  = settings.children,
 			},
 		},
 	}
@@ -172,33 +177,33 @@ end
 
 function wizard.settingsVertical(settings)
 	return {
-		type = "rectangle",
-		flexPad = 0,
+		type      = "rectangle",
+		flexPad   = 0,
 		thickness = THICKNESS,
-		w = lvgl.PERCENT_SIZE + 100,
-		flexFlow = lvgl.FLOW_COLUMN,
-		align = LEFT | VTOP,
-		visible = settings.visible,
-		children = {
+		w         = lvgl.PERCENT_SIZE + 100,
+		flexFlow  = lvgl.FLOW_COLUMN,
+		align     = LEFT | VTOP,
+		visible   = settings.visible,
+		children  = {
 			{
-				type = "rectangle",
+				type      = "rectangle",
 				thickness = THICKNESS,
-				w = lvgl.PERCENT_SIZE + 100,
-				children = {
+				w         = lvgl.PERCENT_SIZE + 100,
+				children  = {
 					{
-						type = "label",
-						w = lvgl.PERCENT_SIZE + 100,
+						type  = "label",
+						w     = lvgl.PERCENT_SIZE + 100,
 						color = COLOR_THEME_PRIMARY1,
-						text = settings.title,
+						text  = settings.title,
 					},
 				},
 			},
 			{
-				type = "rectangle",
+				type      = "rectangle",
 				thickness = THICKNESS,
-				flexFlow = lvgl.FLOW_ROW,
-				align = LEFT | VCENTER,
-				children = settings.children,
+				flexFlow  = lvgl.FLOW_ROW,
+				align     = LEFT | VCENTER,
+				children  = settings.children,
 			},
 		},
 	}
@@ -213,11 +218,11 @@ function wizard.summaryLine(title, chNum, text2)
 	end
 
 	return wizard.settings({
-		title = title,
+		title    = title,
 		children = {
 			{
 				type = "label",
-				w = lvgl.PERCENT_SIZE + 100,
+				w    = lvgl.PERCENT_SIZE + 100,
 				text = txt,
 			},
 		},
@@ -225,27 +230,26 @@ function wizard.summaryLine(title, chNum, text2)
 end
 
 function wizard.image(settings)
-	-- some border around the images
 	local BORDER_PADDING = lvgl.PAD_LARGE * 4
 
 	if ORIENTATION == LANDSCAPE then
 		return {
-			type = "image",
-			x = 0,
-			y = 0,
-			w = LCD_W * 40 / 100 - BORDER_PADDING,
-			h = lvgl.PAGE_BODY_HEIGHT - BORDER_PADDING,
-			file = settings.file,
+			type    = "image",
+			x       = 0,
+			y       = 0,
+			w       = LCD_W * 40 / 100 - BORDER_PADDING,
+			h       = lvgl.PAGE_BODY_HEIGHT - BORDER_PADDING,
+			file    = settings.file,
 			visible = settings.visibleFunc,
 		}
 	else
 		return {
-			type = "image",
-			x = 0,
-			y = 0,
-			w = LCD_W - BORDER_PADDING,
-			h = lvgl.PAGE_BODY_HEIGHT * 40 / 100 - BORDER_PADDING,
-			file = settings.file,
+			type    = "image",
+			x       = 0,
+			y       = 0,
+			w       = LCD_W - BORDER_PADDING,
+			h       = lvgl.PAGE_BODY_HEIGHT * 40 / 100 - BORDER_PADDING,
+			file    = settings.file,
 			visible = settings.visibleFunc,
 		}
 	end
@@ -253,11 +257,11 @@ end
 
 function wizard.finishedPage(settings)
 	return wizard.page({
-		title = settings.title,
-		subtitle = "Finished",
+		title       = settings.title,
+		subtitle    = "Finished",
 		hasPrevious = false,
-		hasNext = false,
-		children1 = {
+		hasNext     = false,
+		children1   = {
 			{
 				type = "label",
 				text = "Model successfully created !",
@@ -269,10 +273,8 @@ function wizard.finishedPage(settings)
 		},
 		children2 = {
 			wizard.image({
-				file = IMG_DIR .. "/summary.png",
-				visible = function()
-					return true
-				end,
+				file    = IMG_DIR .. "/summary.png",
+				visible = function() return true end,
 			}),
 		},
 	})
@@ -285,10 +287,6 @@ end
 function wizard.build(pageDefinition)
 	lvgl.build(pageDefinition)
 end
-
----------------------------------------------------------------------------
--- Navigation (handled by LVGL for color radios)
----------------------------------------------------------------------------
 
 function wizard.handleEvent(event, touchState)
 	-- LVGL handles all events for color radios
