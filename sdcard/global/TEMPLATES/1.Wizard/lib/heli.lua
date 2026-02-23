@@ -528,12 +528,11 @@ local function runConfigSummary()
 	local children2 = {
 		{
 			type = "label",
-			w    = lvgl.PERCENT_SIZE + 100,
+			-- [BW] w removed: was lvgl.PERCENT_SIZE+100, crashes when lvgl is nil.
 			text = "Please review the configuration.",
 		},
 		{
 			type = "label",
-			w    = lvgl.PERCENT_SIZE + 100,
 			text = "After review press next to apply the configuration.",
 		},
 	}

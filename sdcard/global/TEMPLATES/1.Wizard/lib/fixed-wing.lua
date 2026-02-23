@@ -563,7 +563,8 @@ local function runAdditionalSettings()
 			children = {
 				{
 					type = "numberEdit",
-					w    = lvgl.PERCENT_SIZE + 100,
+					-- [BW] w removed: was lvgl.PERCENT_SIZE+100, meaningless on BW
+					-- and crashes when lvgl is nil.  LVGL gets width from layout.
 					min  = AdditionalSettingsFields.expo.min,
 					max  = AdditionalSettingsFields.expo.max,
 					get  = function() return AdditionalSettingsFields.expo.value end,
@@ -709,12 +710,11 @@ local function runConfigSummary()
 	local children2 = {
 		{
 			type = "label",
-			w    = lvgl.PERCENT_SIZE + 100,
+			-- [BW] w removed: was lvgl.PERCENT_SIZE+100, crashes when lvgl is nil.
 			text = "Please review the configuration.",
 		},
 		{
 			type = "label",
-			w    = lvgl.PERCENT_SIZE + 100,
 			text = "After review press next to apply the configuration.",
 		},
 	}

@@ -18,13 +18,10 @@
 ---- #########################################################################
 
 -- Original author: Alexander Gnauck (2025)
--- Color-radio UI module for the EdgeTX model wizard.
--- Implements the wizard UI API using native LVGL calls.
--- On color radios wizard-ui.lua is used directly; this file exists as a
--- named reference copy showing the color implementation in isolation, and
--- as the baseline from which BW shim modules (wiz-bw128-ui.lua,
--- wiz-bw212-ui.lua) were derived.
--- See DEVELOPER.md in this directory for the full page/settings API.
+-- Colour-radio UI module for the EdgeTX model wizard.
+-- Loaded by wizard-ui.lua (the dispatcher) when LVGL is available.
+-- Uses native LVGL calls throughout; never called on BW radios.
+-- See DEVELOPER.md for the full page/settings API.
 
 local IMG_DIR = "/TEMPLATES/1.Wizard/img"
 
@@ -53,8 +50,6 @@ local function closeDialog()
 	})
 end
 
---- return an LVGL page with a layout for the wizard
----@param settings table
 function wizard.page(settings)
 	if ORIENTATION == LANDSCAPE then
 		return {
@@ -212,7 +207,7 @@ end
 function wizard.summaryLine(title, chNum, text2)
 	local txt
 	if chNum ~= nil then
-		txt = "CH" .. chNum + 1
+		txt = "CH" .. (chNum + 1)
 	else
 		txt = text2
 	end
@@ -262,14 +257,8 @@ function wizard.finishedPage(settings)
 		hasPrevious = false,
 		hasNext     = false,
 		children1   = {
-			{
-				type = "label",
-				text = "Model successfully created !",
-			},
-			{
-				type = "label",
-				text = "Hold [RTN] to exit.",
-			},
+			{ type = "label", text = "Model successfully created !" },
+			{ type = "label", text = "Hold [RTN] to exit." },
 		},
 		children2 = {
 			wizard.image({
@@ -289,17 +278,51 @@ function wizard.build(pageDefinition)
 end
 
 function wizard.handleEvent(event, touchState)
-	-- LVGL handles all events for color radios
-	return false
+	return false  -- LVGL handles all events on colour radios
 end
 
 function wizard.needsRefresh()
-	-- LVGL handles refreshing
-	return false
+	return false  -- LVGL handles refreshing
 end
 
 function wizard.refresh()
-	-- LVGL handles display updates
+	-- LVGL handles display updates automatically
+end
+
+-- [BW] wizard.run() is defined here (in the colour implementation) so it is
+-- available regardless of which UI module is loaded.  BW shims also define
+-- it identically.  Centralising the run() body here means all model scripts
+-- share one implementation and only this file needs changing if the
+-- navigation logic changes.
+function wizard.run(event, touchState, page, pages, selectPage)
+	-- Route field-navigation events to the UI module (active on BW;
+	-- handleEvent returns false immediately on colour so LVGL takes over).
+	if event and (
+		event == EVT_VIRTUAL_INC      or event == EVT_VIRTUAL_INC_REPT or
+		event == EVT_VIRTUAL_DEC      or event == EVT_VIRTUAL_DEC_REPT or
+		event == EVT_VIRTUAL_NEXT     or event == EVT_VIRTUAL_PREV     or
+		event == EVT_VIRTUAL_ENTER    or event == EVT_VIRTUAL_EXIT)
+	then
+		if wizard.handleEvent(event, touchState) then
+			if wizard.needsRefresh() then wizard.refresh() end
+			return 0
+		end
+	end
+
+	-- Continuous refresh when a field is in edit mode (needed for BLINK).
+	if wizard.needsRefresh() then wizard.refresh() end
+
+	-- Page-level navigation (hardware Next Page / Prev Page buttons).
+	if event == EVT_VIRTUAL_PREV_PAGE and page > 1 and page < #pages then
+		killEvents(event)
+		selectPage(-1)
+	elseif event == EVT_VIRTUAL_NEXT_PAGE and page < #pages then
+		killEvents(event)
+		selectPage(1)
+	end
+
+	if wizard.exitWizard() then return 2 end
+	return 0
 end
 
 return wizard
